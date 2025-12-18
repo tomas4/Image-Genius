@@ -6,7 +6,8 @@ import {
   Undo2, 
   Redo2,
   ImageIcon,
-  Camera
+  Camera,
+  Settings
 } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -16,6 +17,7 @@ interface TopBarProps {
   dimensions?: { width: number; height: number };
   onExport: () => void;
   onToggleChat: () => void;
+  onToggleSettings: () => void;
   isChatOpen: boolean;
   hasImage: boolean;
   canUndo?: boolean;
@@ -29,6 +31,7 @@ export function TopBar({
   dimensions,
   onExport,
   onToggleChat,
+  onToggleSettings,
   isChatOpen,
   hasImage,
   canUndo = false,
@@ -95,6 +98,20 @@ export function TopBar({
       </div>
 
       <div className="flex items-center gap-2">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onToggleSettings}
+              data-testid="button-toggle-settings"
+            >
+              <Settings className="w-4 h-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Settings</TooltipContent>
+        </Tooltip>
+
         <Tooltip>
           <TooltipTrigger asChild>
             <Button

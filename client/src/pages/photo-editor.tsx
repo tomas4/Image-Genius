@@ -6,6 +6,7 @@ import { ChatPanel } from "@/components/editor/ChatPanel";
 import { ExportDialog, ExportOptions } from "@/components/editor/ExportDialog";
 import { ToolSettings } from "@/components/editor/ToolSettings";
 import { UploadZone } from "@/components/editor/UploadZone";
+import { SettingsDialog } from "@/components/editor/SettingsDialog";
 import { useToast } from "@/hooks/use-toast";
 
 interface ImageState {
@@ -26,6 +27,7 @@ export default function PhotoEditor() {
   const [showComparison, setShowComparison] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
   const [history, setHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
 
@@ -152,6 +154,7 @@ export default function PhotoEditor() {
         dimensions={image.dimensions || undefined}
         onExport={() => setExportDialogOpen(true)}
         onToggleChat={() => setIsChatOpen(!isChatOpen)}
+        onToggleSettings={() => setSettingsDialogOpen(true)}
         isChatOpen={isChatOpen}
         hasImage={!!image.dataUrl}
         canUndo={historyIndex > 0}
@@ -203,6 +206,18 @@ export default function PhotoEditor() {
         onOpenChange={setExportDialogOpen}
         dimensions={image.dimensions || undefined}
         onExport={handleExport}
+      />
+
+      <SettingsDialog
+        open={settingsDialogOpen}
+        onOpenChange={setSettingsDialogOpen}
+        onSave={(settings) => {
+          console.log("Settings saved:", settings);
+          toast({
+            title: "Settings saved",
+            description: "Your configuration has been saved.",
+          });
+        }}
       />
     </div>
   );
