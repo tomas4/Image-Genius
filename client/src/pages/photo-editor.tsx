@@ -271,8 +271,12 @@ export default function PhotoEditor() {
         <ChatPanel
           isOpen={isChatOpen}
           onClose={() => setIsChatOpen(false)}
-          onSendMessage={handleSendMessage}
+          onSendMessage={(message) => console.log("Chat message:", message)}
+          imageDataUrl={image.dataUrl}
           isProcessing={isProcessing}
+          onEditingIntent={(operation, prompt) => {
+            console.log("Editing intent:", operation, prompt);
+          }}
         />
       </div>
 

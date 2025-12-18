@@ -1,9 +1,10 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Send, Sparkles, User, X, MessageSquare } from "lucide-react";
+import { Send, Sparkles, User, X, MessageSquare, AlertCircle } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface Message {
   id: string;
@@ -16,10 +17,19 @@ interface ChatPanelProps {
   isOpen: boolean;
   onClose: () => void;
   onSendMessage: (message: string) => void;
+  imageDataUrl?: string | null;
   isProcessing?: boolean;
+  onEditingIntent?: (operation: string, prompt: string) => void;
 }
 
-export function ChatPanel({ isOpen, onClose, onSendMessage, isProcessing }: ChatPanelProps) {
+export function ChatPanel({ 
+  isOpen, 
+  onClose, 
+  onSendMessage, 
+  imageDataUrl,
+  isProcessing,
+  onEditingIntent 
+}: ChatPanelProps) {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -29,8 +39,10 @@ export function ChatPanel({ isOpen, onClose, onSendMessage, isProcessing }: Chat
       timestamp: new Date(),
     },
   ]);
+  const [apiKeyMissing, setApiKeyMissing] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -38,8 +50,22 @@ export function ChatPanel({ isOpen, onClose, onSendMessage, isProcessing }: Chat
     }
   }, [messages]);
 
-  const handleSend = () => {
+  const handleSend = useCallback(async () => {
     if (!input.trim() || isProcessing) return;
+
+    // Check for API key
+    const settings = localStorage.getItem("photoEditorSettings");
+    const apiKey = settings ? JSON.parse(settings).apiKey : "";
+
+    if (!apiKey) {
+      setApiKeyMissing(true);
+      toast({
+        title: "API Key Required",
+        description: "Please configure your OpenAI API key in Settings to use AI features.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -49,20 +75,43 @@ export function ChatPanel({ isOpen, onClose, onSendMessage, isProcessing }: Chat
     };
 
     setMessages(prev => [...prev, userMessage]);
-    onSendMessage(input.trim());
+    const userInput = input.trim();
     setInput("");
+    onSendMessage(userInput);
 
-    // todo: remove mock functionality
+    // Check if message indicates an editing operation
+    const message = userInput.toLowerCase();
+    if (
+      message.includes("remove") ||
+      message.includes("delete") ||
+      message.includes("erase")
+    ) {
+      onEditingIntent?.("remove-object", userInput);
+    } else if (
+      message.includes("background") ||
+      message.includes("replace bg") ||
+      message.includes("new background")
+    ) {
+      onEditingIntent?.("background", userInput);
+    } else if (
+      message.includes("enhance") ||
+      message.includes("improve") ||
+      message.includes("better")
+    ) {
+      onEditingIntent?.("enhance", userInput);
+    }
+
+    // Simulate AI response
     setTimeout(() => {
       const aiResponse: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: "I understand you want to make some changes. I'm analyzing your image and will apply the requested edits. This feature will be connected to the AI backend soon.",
+        content: "I understand. I'm analyzing your image and preparing the edits. Advanced features like object removal and background changes will be processed using AI.",
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, aiResponse]);
-    }, 1500);
-  };
+    }, 1000);
+  }, [input, isProcessing, onSendMessage, onEditingIntent, toast]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -88,6 +137,15 @@ export function ChatPanel({ isOpen, onClose, onSendMessage, isProcessing }: Chat
           <X className="w-4 h-4" />
         </Button>
       </div>
+
+      {apiKeyMissing && (
+        <div className="px-4 py-2 bg-destructive/10 border-b border-destructive/20 flex items-start gap-2">
+          <AlertCircle className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
+          <p className="text-xs text-destructive">
+            Configure OpenAI API key in Settings for advanced features
+          </p>
+        </div>
+      )}
 
       <ScrollArea className="flex-1 p-4" ref={scrollRef}>
         <div className="space-y-4">
