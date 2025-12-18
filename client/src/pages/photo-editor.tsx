@@ -8,6 +8,7 @@ import { ToolSettings } from "@/components/editor/ToolSettings";
 import { UploadZone } from "@/components/editor/UploadZone";
 import { SettingsDialog } from "@/components/editor/SettingsDialog";
 import { useToast } from "@/hooks/use-toast";
+import * as imageProcessing from "@/lib/image-processing";
 
 interface ImageState {
   file: File | null;
@@ -54,20 +55,94 @@ export default function PhotoEditor() {
     console.log("Tool selected:", toolId);
   }, []);
 
-  const handleToolApply = useCallback((settings: Record<string, number>) => {
+  const handleToolApply = useCallback(async (settings: Record<string, number>) => {
+    if (!selectedTool || !image.dataUrl) {
+      return;
+    }
+
     setIsProcessing(true);
-    console.log("Applying tool:", selectedTool, settings);
-    
-    // todo: remove mock functionality - simulate processing
-    setTimeout(() => {
+    try {
+      let result;
+
+      switch (selectedTool) {
+        case "sharpen":
+          result = await imageProcessing.applySharpening(
+            image.dataUrl,
+            settings.amount || 50,
+            settings.radius || 1
+          );
+          break;
+        case "denoise":
+          result = await imageProcessing.applyDenoise(
+            image.dataUrl,
+            settings.strength || 30,
+            settings.detail || 70
+          );
+          break;
+        case "contrast":
+          result = await imageProcessing.adjustContrast(
+            image.dataUrl,
+            settings.contrast || 0
+          );
+          break;
+        case "exposure":
+          result = await imageProcessing.adjustExposure(
+            image.dataUrl,
+            settings.exposure || 0,
+            settings.highlights || 0,
+            settings.shadows || 0
+          );
+          break;
+        case "color-correct":
+          result = await imageProcessing.adjustColorCorrection(
+            image.dataUrl,
+            settings.temperature || 0,
+            settings.tint || 0,
+            settings.saturation || 0
+          );
+          break;
+        case "red-eye":
+          result = await imageProcessing.removeRedEye(
+            image.dataUrl,
+            settings.sensitivity || 50
+          );
+          break;
+        case "enhance":
+          result = await imageProcessing.autoEnhance(image.dataUrl);
+          break;
+        default:
+          throw new Error(`Unknown tool: ${selectedTool}`);
+      }
+
+      if (result) {
+        // Add to history
+        setHistory(prev => [...prev.slice(0, historyIndex + 1), result.dataUrl]);
+        setHistoryIndex(prev => prev + 1);
+        
+        // Update image
+        setImage(prev => ({
+          ...prev,
+          dataUrl: result.dataUrl,
+          dimensions: { width: result.width, height: result.height },
+        }));
+
+        toast({
+          title: "Effect applied",
+          description: `${selectedTool} has been applied to your image.`,
+        });
+      }
+    } catch (error) {
+      console.error("Processing error:", error);
+      toast({
+        title: "Processing error",
+        description: "Failed to apply the effect. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
       setIsProcessing(false);
       setSelectedTool(null);
-      toast({
-        title: "Effect applied",
-        description: `${selectedTool} has been applied to your image.`,
-      });
-    }, 1500);
-  }, [selectedTool, toast]);
+    }
+  }, [selectedTool, image.dataUrl, history, historyIndex, toast]);
 
   const handleToolCancel = useCallback(() => {
     setSelectedTool(null);

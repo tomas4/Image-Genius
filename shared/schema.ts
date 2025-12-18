@@ -1,18 +1,35 @@
-import { sql } from "drizzle-orm";
-import { pgTable, text, varchar } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const users = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+// Image processing request schema
+export const imageProcessingRequestSchema = z.object({
+  imageBase64: z.string().min(1),
+  tool: z.enum([
+    "sharpen",
+    "denoise",
+    "contrast",
+    "exposure",
+    "colorCorrection",
+    "redEye",
+    "enhance",
+  ]),
+  settings: z.record(z.number()),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
+export type ImageProcessingRequest = z.infer<typeof imageProcessingRequestSchema>;
+
+// Chat message schema
+export const chatMessageSchema = z.object({
+  role: z.enum(["user", "assistant"]),
+  content: z.string().min(1),
 });
 
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
+export type ChatMessage = z.infer<typeof chatMessageSchema>;
+
+// AI processing request schema
+export const aiProcessingRequestSchema = z.object({
+  imageBase64: z.string().min(1),
+  prompt: z.string().min(1),
+  operation: z.enum(["removeObject", "changeBackground", "enhance"]),
+});
+
+export type AIProcessingRequest = z.infer<typeof aiProcessingRequestSchema>;
