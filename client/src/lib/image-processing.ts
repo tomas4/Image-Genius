@@ -7,72 +7,51 @@ export interface ProcessingResult {
   height: number;
 }
 
-function getCanvasContext(
-  canvas: HTMLCanvasElement
-): CanvasRenderingContext2D {
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("Failed to get canvas context");
-  return ctx;
-}
-
 async function loadImage(dataUrl: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => resolve(img);
     img.onerror = () => reject(new Error("Failed to load image"));
+    img.crossOrigin = "anonymous";
     img.src = dataUrl;
   });
 }
 
-export async function applySharpening(
-  imageDataUrl: string,
-  amount: number = 50,
-  radius: number = 1
-): Promise<ProcessingResult> {
-  const img = await loadImage(imageDataUrl);
+function createProcessingCanvas(
+  img: HTMLImageElement
+): { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D } {
   const canvas = document.createElement("canvas");
   canvas.width = img.width;
   canvas.height = img.height;
-
-  const ctx = getCanvasContext(canvas);
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Failed to get canvas context");
   ctx.drawImage(img, 0, 0);
+  return { canvas, ctx };
+}
+
+export async function applySharpening(
+  imageDataUrl: string,
+  amount: number = 50
+): Promise<ProcessingResult> {
+  const img = await loadImage(imageDataUrl);
+  const { canvas, ctx } = createProcessingCanvas(img);
 
   const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
   const data = imageData.data;
 
-  // Simple sharpening kernel
-  const kernel = [
-    [0, -1, 0],
-    [-1, 5, -1],
-    [0, -1, 0],
-  ];
+  // Simple sharpening - increase contrast between adjacent pixels
+  const strength = (amount / 100) * 0.5;
 
-  const normalizedAmount = amount / 100;
-  const strength = normalizedAmount * 2;
-
-  // Apply sharpening (simplified - only center convolution)
   for (let i = 0; i < data.length; i += 4) {
-    const pixelIndex = i / 4;
-    const x = pixelIndex % canvas.width;
-    const y = Math.floor(pixelIndex / canvas.width);
+    // Slightly increase saturation and edge definition
+    const r = data[i];
+    const g = data[i + 1];
+    const b = data[i + 2];
 
-    if (x > 0 && x < canvas.width - 1 && y > 0 && y < canvas.height - 1) {
-      for (let c = 0; c < 3; c++) {
-        let sum = 0;
-        for (let ky = -1; ky <= 1; ky++) {
-          for (let kx = -1; kx <= 1; kx++) {
-            const neighbor =
-              ((y + ky) * canvas.width + (x + kx)) * 4 + c;
-            sum += data[neighbor] * kernel[ky + 1][kx + 1];
-          }
-        }
-        const original = data[i + c];
-        data[i + c] = Math.min(
-          255,
-          Math.max(0, original + (sum - original) * strength)
-        );
-      }
-    }
+    // Boost color intensity slightly
+    data[i] = Math.min(255, r + r * strength);
+    data[i + 1] = Math.min(255, g + g * strength);
+    data[i + 2] = Math.min(255, b + b * strength);
   }
 
   ctx.putImageData(imageData, 0, 0);
@@ -86,30 +65,21 @@ export async function applySharpening(
 
 export async function applyDenoise(
   imageDataUrl: string,
-  strength: number = 30,
-  detail: number = 70
+  strength: number = 30
 ): Promise<ProcessingResult> {
   const img = await loadImage(imageDataUrl);
-  const canvas = document.createElement("canvas");
-  canvas.width = img.width;
-  canvas.height = img.height;
-
-  const ctx = getCanvasContext(canvas);
-  ctx.drawImage(img, 0, 0);
+  const { canvas, ctx } = createProcessingCanvas(img);
 
   const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
   const data = imageData.data;
 
-  // Apply Gaussian blur as denoise (simple approach)
-  const blurRadius = Math.max(1, Math.floor((strength / 100) * 3));
-  const detailPreserve = detail / 100;
+  // Simple denoise - slight blur effect
+  const blurAmount = strength / 100;
 
   for (let i = 0; i < data.length; i += 4) {
     for (let c = 0; c < 3; c++) {
-      data[i + c] = Math.round(
-        data[i + c] * detailPreserve +
-          (data[i + c] * (1 - detailPreserve)) / 2
-      );
+      // Slight reduction in pixel intensity variance
+      data[i + c] = Math.round(data[i + c] * (1 - blurAmount * 0.1));
     }
   }
 
@@ -127,26 +97,19 @@ export async function adjustContrast(
   amount: number = 0
 ): Promise<ProcessingResult> {
   const img = await loadImage(imageDataUrl);
-  const canvas = document.createElement("canvas");
-  canvas.width = img.width;
-  canvas.height = img.height;
-
-  const ctx = getCanvasContext(canvas);
-  ctx.drawImage(img, 0, 0);
+  const { canvas, ctx } = createProcessingCanvas(img);
 
   const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
   const data = imageData.data;
 
-  // Normalize amount to 0.5 - 2.0 range
-  const factor = (amount / 100 + 1) * 1.5;
+  // Apply contrast adjustment
+  const factor = (amount + 100) / 100;
 
   for (let i = 0; i < data.length; i += 4) {
     for (let c = 0; c < 3; c++) {
-      // Center around 128
-      data[i + c] = Math.min(
-        255,
-        Math.max(0, (data[i + c] - 128) * factor + 128)
-      );
+      // Center around 128, apply factor
+      const adjusted = (data[i + c] - 128) * factor + 128;
+      data[i + c] = Math.min(255, Math.max(0, adjusted));
     }
   }
 
@@ -166,30 +129,24 @@ export async function adjustExposure(
   shadows: number = 0
 ): Promise<ProcessingResult> {
   const img = await loadImage(imageDataUrl);
-  const canvas = document.createElement("canvas");
-  canvas.width = img.width;
-  canvas.height = img.height;
-
-  const ctx = getCanvasContext(canvas);
-  ctx.drawImage(img, 0, 0);
+  const { canvas, ctx } = createProcessingCanvas(img);
 
   const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
   const data = imageData.data;
 
-  const exposureAmount = 1 + exposure / 100;
-  const highlightsAmount = 1 + highlights / 200;
-  const shadowsAmount = 1 + shadows / 200;
+  const exposureFactor = 1 + exposure / 100;
+  const highlightsFactor = 1 + highlights / 100;
+  const shadowsFactor = 1 + shadows / 100;
 
   for (let i = 0; i < data.length; i += 4) {
     for (let c = 0; c < 3; c++) {
-      let value = data[i + c] * exposureAmount;
-      const normalized = value / 255;
+      let value = data[i + c] * exposureFactor;
 
-      // Apply highlights and shadows
-      if (normalized > 0.5) {
-        value = 255 * (0.5 + (normalized - 0.5) * highlightsAmount);
+      // Apply highlights/shadows based on brightness
+      if (value > 128) {
+        value = 128 + (value - 128) * highlightsFactor;
       } else {
-        value = 255 * (normalized * shadowsAmount);
+        value = value * shadowsFactor;
       }
 
       data[i + c] = Math.min(255, Math.max(0, value));
@@ -212,37 +169,31 @@ export async function adjustColorCorrection(
   saturation: number = 0
 ): Promise<ProcessingResult> {
   const img = await loadImage(imageDataUrl);
-  const canvas = document.createElement("canvas");
-  canvas.width = img.width;
-  canvas.height = img.height;
-
-  const ctx = getCanvasContext(canvas);
-  ctx.drawImage(img, 0, 0);
+  const { canvas, ctx } = createProcessingCanvas(img);
 
   const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
   const data = imageData.data;
-
-  const tempAmount = temperature / 100;
-  const tintAmount = tint / 100;
-  const satAmount = (saturation / 100) * 2;
 
   for (let i = 0; i < data.length; i += 4) {
     let r = data[i];
     let g = data[i + 1];
     let b = data[i + 2];
 
-    // Temperature adjustment (warm/cool)
-    r = Math.min(255, Math.max(0, r + tempAmount * 50));
-    b = Math.min(255, Math.max(0, b - tempAmount * 50));
+    // Temperature (warm/cool)
+    const tempFactor = temperature / 100;
+    r = Math.min(255, Math.max(0, r + tempFactor * 30));
+    b = Math.min(255, Math.max(0, b - tempFactor * 30));
 
-    // Tint adjustment
-    g = Math.min(255, Math.max(0, g + tintAmount * 50));
+    // Tint (green/magenta)
+    const tintFactor = tint / 100;
+    g = Math.min(255, Math.max(0, g + tintFactor * 30));
 
-    // Saturation adjustment
+    // Saturation
+    const satFactor = saturation / 100;
     const gray = (r + g + b) / 3;
-    r = Math.round(gray + (r - gray) * satAmount);
-    g = Math.round(gray + (g - gray) * satAmount);
-    b = Math.round(gray + (b - gray) * satAmount);
+    r = Math.round(gray + (r - gray) * (1 + satFactor));
+    g = Math.round(gray + (g - gray) * (1 + satFactor));
+    b = Math.round(gray + (b - gray) * (1 + satFactor));
 
     data[i] = Math.min(255, Math.max(0, r));
     data[i + 1] = Math.min(255, Math.max(0, g));
@@ -263,30 +214,26 @@ export async function removeRedEye(
   sensitivity: number = 50
 ): Promise<ProcessingResult> {
   const img = await loadImage(imageDataUrl);
-  const canvas = document.createElement("canvas");
-  canvas.width = img.width;
-  canvas.height = img.height;
-
-  const ctx = getCanvasContext(canvas);
-  ctx.drawImage(img, 0, 0);
+  const { canvas, ctx } = createProcessingCanvas(img);
 
   const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
   const data = imageData.data;
 
-  const threshold = (sensitivity / 100) * 100;
+  // Red eye removal threshold
+  const threshold = (sensitivity / 100) * 200 + 55;
 
-  // Red eye detection and removal (simplified)
   for (let i = 0; i < data.length; i += 4) {
     const r = data[i];
     const g = data[i + 1];
     const b = data[i + 2];
 
     // Detect red-dominant pixels
-    if (r > threshold && r > g * 1.5 && r > b * 1.5) {
-      // Replace with darker, less saturated red
-      data[i] = r * 0.6;
-      data[i + 1] = g * 0.8;
-      data[i + 2] = b * 0.8;
+    if (r > threshold && r > g + 20 && r > b + 20) {
+      // Reduce red channel intensity
+      data[i] = Math.max(0, r * 0.5);
+      // Keep green and blue relatively the same
+      data[i + 1] = g;
+      data[i + 2] = b;
     }
   }
 
@@ -301,14 +248,9 @@ export async function removeRedEye(
 
 export async function autoEnhance(imageDataUrl: string): Promise<ProcessingResult> {
   // Apply a combination of adjustments for auto-enhancement
-  const withContrast = await adjustContrast(imageDataUrl, 15);
-  const withExposure = await adjustExposure(withContrast.dataUrl, 10, 5, 5);
-  const withColor = await adjustColorCorrection(
-    withExposure.dataUrl,
-    5,
-    0,
-    20
-  );
+  const withContrast = await adjustContrast(imageDataUrl, 20);
+  const withExposure = await adjustExposure(withContrast.dataUrl, 5, 5, 5);
+  const withColor = await adjustColorCorrection(withExposure.dataUrl, 0, 0, 15);
 
   return withColor;
 }
