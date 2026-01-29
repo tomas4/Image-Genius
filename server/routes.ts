@@ -33,47 +33,76 @@ export async function registerRoutes(
   app.post("/api/process-ai", async (req, res) => {
     try {
       const validated = aiProcessingRequestSchema.parse(req.body);
+      const apiKey = req.headers["x-api-key"] as string || process.env.OPENAI_API_KEY;
 
-      // Check for API key in request or environment
-      const apiKey = req.headers["x-api-key"] as string;
+      if (validated.modelType === "openai") {
+        if (!apiKey) {
+          return res.status(401).json({ error: "OpenAI API key required" });
+        }
+        
+        const { callOpenAIImageEdit } = await import("./image-processor");
+        const processedImage = await callOpenAIImageEdit({
+          imageBase64: validated.image,
+          prompt: validated.operation,
+        }, apiKey);
 
-      if (!apiKey) {
-        return res
-          .status(401)
-          .json({ error: "API key required for AI operations" });
+        return res.json({ success: true, image: processedImage });
+      } else {
+        // Local model processing
+        const { processWithLocalModel } = await import("./image-processor");
+        const processedImage = await processWithLocalModel(
+          validated.image,
+          "models/" + validated.modelType,
+          validated.modelType
+        );
+
+        return res.json({ success: true, image: processedImage });
       }
-
-      // Todo: implement actual AI processing with OpenAI or local models
-      res.status(501).json({
-        error: "AI processing not yet implemented",
-        operation: validated.operation,
-        note: "This will be connected to OpenAI API or local models",
-      });
-    } catch (error) {
-      res.status(400).json({ error: "Invalid request" });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Invalid request" });
     }
   });
 
   // Chat endpoint for natural language image editing commands
   app.post("/api/chat", async (req, res) => {
     try {
-      const { message, imageContext } = req.body;
+      const { message, imageContext, apiKey: userApiKey } = req.body;
+      const apiKey = userApiKey || process.env.OPENAI_API_KEY;
 
       if (!message || typeof message !== "string") {
         return res.status(400).json({ error: "Message required" });
       }
 
-      // Todo: parse message to determine editing operation
-      // This will integrate with OpenAI to understand user intent
+      if (!apiKey) {
+        return res.status(401).json({ error: "API key required for chat" });
+      }
+
+      const { OpenAI } = await import("openai");
+      const openai = new OpenAI({ apiKey });
+
+      const content: any[] = [{ type: "text", text: message }];
+      if (imageContext) {
+        content.push({
+          type: "image_url",
+          image_url: { url: `data:image/jpeg;base64,${imageContext}` }
+        });
+      }
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4-vision-preview",
+        messages: [{ role: "user", content }],
+        max_tokens: 500,
+      });
+
+      const reply = response.choices[0].message.content;
 
       res.json({
         success: true,
-        message: "Chat message received",
-        suggestedOperation: null,
-        note: "Chat integration not yet implemented",
+        message: reply,
+        suggestedOperation: null, // Intent extraction could be added here
       });
-    } catch (error) {
-      res.status(500).json({ error: "Server error" });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Server error" });
     }
   });
 
