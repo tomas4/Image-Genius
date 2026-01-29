@@ -2,7 +2,7 @@
 
 A responsive, full-featured photo editing application with both quick-action tools and AI-powered capabilities for advanced image manipulation.
 
-**Note** - Currently not ready, some functions not working. See also: [replit.md]
+**Note** - Currently not ready, some functions not working. See also: [replit.md](replit.md)
 
 ## Features
 
