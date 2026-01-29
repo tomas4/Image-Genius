@@ -29,7 +29,8 @@ export type ChatMessage = z.infer<typeof chatMessageSchema>;
 export const aiProcessingRequestSchema = z.object({
   imageBase64: z.string().min(1),
   prompt: z.string().min(1),
-  operation: z.enum(["removeObject", "changeBackground", "enhance"]),
+  operation: z.enum(["removeObject", "changeBackground", "enhance", "upscale"]),
+  modelType: z.enum(["openai", "GFPGAN", "Real-ESRGAN", "REMBG", "ONNX"]).optional().default("openai"),
 });
 
 export type AIProcessingRequest = z.infer<typeof aiProcessingRequestSchema>;

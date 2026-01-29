@@ -42,7 +42,7 @@ export async function registerRoutes(
         
         const { callOpenAIImageEdit } = await import("./image-processor");
         const processedImage = await callOpenAIImageEdit({
-          imageBase64: validated.image,
+          imageBase64: validated.imageBase64,
           prompt: validated.operation,
         }, apiKey);
 
@@ -51,9 +51,9 @@ export async function registerRoutes(
         // Local model processing
         const { processWithLocalModel } = await import("./image-processor");
         const processedImage = await processWithLocalModel(
-          validated.image,
+          validated.imageBase64,
           "models/" + validated.modelType,
-          validated.modelType
+          validated.modelType || "default"
         );
 
         return res.json({ success: true, image: processedImage });

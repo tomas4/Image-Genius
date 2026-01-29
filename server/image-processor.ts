@@ -68,10 +68,13 @@ export async function processWithLocalModel(
 ): Promise<string> {
   // In a real implementation, this would use a child process to run
   // Python scripts for GFPGAN, Real-ESRGAN, etc.
-  // Example: spawn('python', ['scripts/restore_face.py', '--input', tempFile])
+  
+  if (modelType === "REMBG") {
+    console.log("Simulating Background Removal (REMBG)");
+    // In a real scenario, we'd call rembg here
+    return imageBase64;
+  }
   
   console.log(`Processing with local model: ${modelType} at ${modelPath}`);
-  
-  // For now, return the image unchanged to demonstrate the pipeline
   return imageBase64;
 }
