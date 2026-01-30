@@ -1,28 +1,28 @@
 #!/usr/bin/env bash
-# Setup local dev scaffolding & push a feature branch safely.
-# Run from the repo root: ./setup-local-dev.sh
-
 set -euo pipefail
 
 BRANCH="feature/local-dev-scripts"
 
-# Ensure we're in a git repo and can reach origin
-if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  echo "❌ Not inside a Git repository. cd into your cloned repo and run again."
-  exit 1
-fi
+# Ensure we are in a repo root
+git rev-parse --is-inside-work-tree >/dev/null
 
-# Check for uncommitted changes (optional safety)
-if ! git diff --quiet || ! git diff --cached --quiet; then
-  echo "⚠️ You have uncommitted changes. Commit or stash them first."
-  exit 1
-fi
-
-echo "⏳ Fetching origin and creating branch $BRANCH..."
-git fetch origin
-# Create branch from current default branch (usually main)
+# Determine default remote branch (usually 'main')
 DEFAULT_BASE="$(git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@')"
-git checkout -b "$BRANCH" "origin/$DEFAULT_BASE"
+
+git fetch origin
+
+# If branch exists locally, just switch to it; else create from origin/DEFAULT_BASE
+if git show-ref --verify --quiet "refs/heads/$BRANCH"; then
+  echo "ℹ️  Branch '$BRANCH' already exists locally; checking it out."
+  git checkout "$BRANCH"
+else
+  echo "ℹ️  Creating branch '$BRANCH' from origin/$DEFAULT_BASE"
+  git checkout -b "$BRANCH" "origin/$DEFAULT_BASE"
+fi
+
+# Also make sure a remote tracking branch exists
+git push -u origin "$BRANCH" >/dev/null 2>&1 || true
+
 
 # --- Create directories
 mkdir -p backend/src frontend
