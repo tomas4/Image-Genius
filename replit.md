@@ -1,7 +1,7 @@
 # AI Photo Editor - Project Documentation
 
 ## Project Overview
-A responsive, AI-powered photo editing application built with Fullstack JavaScript. Supports both client-side image processing for speed and OpenAI API integration for advanced AI features.
+A responsive, AI-powered photo editing application built with Fullstack JavaScript. Supports both client-side image processing for speed and Gemini AI integration for advanced AI features.
 
 ## Architecture
 
@@ -17,7 +17,7 @@ A responsive, AI-powered photo editing application built with Fullstack JavaScri
 - Express.js
 - Node.js
 - Zod for validation
-- OpenAI API integration (GPT-4 Vision)
+- Gemini AI integration (multimodal gemini-1.5-flash)
 - Local model support infrastructure (REMBG, GFPGAN, etc.)
 
 ### Key Components
@@ -26,7 +26,7 @@ A responsive, AI-powered photo editing application built with Fullstack JavaScri
 3. **ToolsSidebar** - Tool selection and quick actions
 4. **ToolSettings** - Parameter adjustment with sliders
 5. **ChatPanel** - AI assistant interface with vision capabilities
-6. **SettingsDialog** - API key and model configuration
+6. **SettingsDialog** - Model configuration
 7. **ExportDialog** - Multi-format export options
 
 ### Data Flow
@@ -43,19 +43,19 @@ A responsive, AI-powered photo editing application built with Fullstack JavaScri
 - 7 client-side image processing tools (sharpen, denoise, contrast, exposure, color correction, red eye removal, enhance)
 - Full undo/redo history system
 - Before/after comparison view
-- Settings dialog with API key configuration
+- Settings dialog for local model configuration
 - Dark mode theme
 - Responsive UI with collapsible chat panel
 - Export with multiple formats (PNG, JPEG, WebP)
 - Image upload with drag-and-drop support
 - Processing status indicators
-- OpenAI Vision API integration for image analysis and chat
+- Gemini AI integration for image analysis and chat
 - Natural language command processing via chat
 - Backend infrastructure for local model support (REMBG placeholder)
 
 ### 🚧 Backend Ready (In Progress)
 - Full local model execution (GFPGAN, Real-ESRGAN, ONNX)
-- Specialized image editing endpoints (DALL-E 2 Edit API)
+- Specialized image editing endpoints
 
 ### ⏸ Not Implemented
 - Database persistence for editing history
@@ -71,9 +71,9 @@ Decision: Use Canvas API (Filters) for all basic operations
 Rationale: Immediate feedback, no server latency, works offline, resolves greenish rectangle bug by using source-to-canvas rendering with filters.
 
 ### Settings Storage
-Decision: Use localStorage for API keys and model config
+Decision: Use localStorage for model config
 Rationale: Convenient for single-user app, settings persist across sessions
-Note: In production, should use secure credential storage
+Note: AI features use Replit AI Integrations (no API key required)
 
 ### History Tracking
 Decision: Store edited image DataURLs in memory
@@ -104,7 +104,7 @@ Rationale: Better performance and smaller file sizes compared to PNG while maint
 - Error handling with toast notifications
 
 ## Environment Variables
-- OPENAI_API_KEY (Required for AI features if not provided via UI settings)
+- REPLIT_AI_API_KEY (Managed by Replit AI Integrations)
 
 ## Performance Characteristics
 - Initial load: ~2s (includes React, TailwindCSS, components)
@@ -126,9 +126,9 @@ Rationale: Better performance and smaller file sizes compared to PNG while maint
 - [x] Undo/redo functionality
 - [x] Before/after comparison toggle
 - [x] Export in different formats
-- [x] Settings configuration (API key, models)
+- [x] Settings configuration (models)
 - [x] Chat panel open/close
-- [x] AI chat interaction (Vision)
+- [x] AI chat interaction (Gemini)
 - [x] Dark mode toggle
 - [x] Theme persistence
 
@@ -152,12 +152,11 @@ Rationale: Better performance and smaller file sizes compared to PNG while maint
 - Settings are stored in localStorage as JSON
 - History is stored in state array with current index
 - Client-side processing uses standard Canvas filters for stability
-- Backend integrates with OpenAI using the official SDK and GPT-4 Vision
+- Backend integrates with Gemini using Replit AI Integrations
 
 ## Deployment Notes
 - Frontend builds to static files with Vite
 - Backend runs on same port as frontend (5000)
 - No database required for MVP
-- OPENAI_API_KEY should be set as environment variable in production
 
 </file>
