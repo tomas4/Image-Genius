@@ -53,20 +53,6 @@ export function ChatPanel({
   const handleSend = useCallback(async () => {
     if (!input.trim() || isProcessing) return;
 
-    // Check for API key
-    const settings = localStorage.getItem("photoEditorSettings");
-    const apiKey = settings ? JSON.parse(settings).apiKey : "";
-
-    if (!apiKey) {
-      setApiKeyMissing(true);
-      toast({
-        title: "API Key Required",
-        description: "Please configure your OpenAI API key in Settings to use AI features.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     const userMessage: Message = {
       id: Date.now().toString(),
       role: "user",
@@ -139,10 +125,10 @@ export function ChatPanel({
       </div>
 
       {apiKeyMissing && (
-        <div className="px-4 py-2 bg-destructive/10 border-b border-destructive/20 flex items-start gap-2">
-          <AlertCircle className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
-          <p className="text-xs text-destructive">
-            Configure OpenAI API key in Settings for advanced features
+        <div className="px-4 py-2 bg-primary/10 border-b border-primary/20 flex items-start gap-2">
+          <Sparkles className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+          <p className="text-xs text-primary">
+            AI features are powered by Google Gemini (Replit AI)
           </p>
         </div>
       )}

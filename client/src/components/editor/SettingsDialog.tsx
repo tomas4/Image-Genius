@@ -104,20 +104,21 @@ export function SettingsDialog({ open, onOpenChange, onSave }: SettingsDialogPro
             <div className="rounded-md bg-muted p-3 flex items-start gap-2">
               <AlertCircle className="w-4 h-4 mt-0.5 text-muted-foreground shrink-0" />
               <p className="text-sm text-muted-foreground">
-                Advanced image editing features like object removal and background changes require an OpenAI API key. Get one at <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">openai.com/api-keys</a>
+                AI features are powered by Google Gemini via Replit AI Integrations. No API key is required as long as you have Replit credits.
               </p>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="api-key">OpenAI API Key</Label>
+            <div className="space-y-2 opacity-50 cursor-not-allowed">
+              <Label htmlFor="api-key">Gemini API Key (Optional)</Label>
               <div className="relative">
                 <Input
                   id="api-key"
                   type={showApiKey ? "text" : "password"}
                   value={settings.apiKey}
                   onChange={(e) => handleChange("apiKey", e.target.value)}
-                  placeholder="sk-..."
+                  placeholder="Managed by Replit"
                   className="pr-10"
+                  disabled
                   data-testid="input-api-key"
                 />
                 <Button
@@ -125,17 +126,16 @@ export function SettingsDialog({ open, onOpenChange, onSave }: SettingsDialogPro
                   variant="ghost"
                   className="absolute right-2 top-1/2 -translate-y-1/2"
                   onClick={() => setShowApiKey(!showApiKey)}
+                  disabled
                   data-testid="button-toggle-api-visibility"
                 >
                   {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </Button>
               </div>
-              {settings.apiKey && (
-                <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
-                  <CheckCircle className="w-4 h-4" />
-                  API key configured
-                </div>
-              )}
+              <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+                <CheckCircle className="w-4 h-4" />
+                Replit AI Integration Active
+              </div>
             </div>
 
             <Separator />
