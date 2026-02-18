@@ -2,23 +2,23 @@
 
 A responsive, full-featured photo editing application with both quick-action tools and AI-powered capabilities for advanced image manipulation.
 
-**Note** - Currently not ready, some functions not working. See also: [replit.md](replit.md)
+**Note** - Powered by Google Gemini. See also: [replit.md](replit.md)
 
 ## Features
 
 ### Client-Side Image Processing
-- **Sharpen** - Enhance image details with adjustable amount and radius
+- **Sharpen** - Enhance image details with adjustable amount
 - **Denoise** - Reduce noise while preserving fine details
 - **Contrast** - Adjust image contrast from -100 to 100
-- **Exposure** - Control overall exposure, highlights, and shadows
-- **Color Correction** - Temperature, tint, and saturation adjustments
-- **Red Eye Removal** - Automatically detect and reduce red-eye effects
+- **Exposure** - Control overall exposure and brightness
+- **Color Correction** - Saturation adjustments
+- **Red Eye Removal** - Automatically reduce red-eye effects
 - **Auto Enhance** - One-click enhancement with preset optimizations
 
-### Advanced AI Features (OpenAI Integration Ready)
-- **Object Removal** - Intelligent removal using AI inpainting
+### Advanced AI Features (Gemini Integration)
+- **Object Removal** - Intelligent removal using Gemini AI analysis
 - **Background Change** - AI-powered background replacement
-- **Chat Assistant** - Natural language interface for editing commands
+- **Chat Assistant** - Natural language interface powered by Gemini Pro
 - **Undo/Redo** - Full history tracking for all edits
 
 ### UI Components
@@ -27,7 +27,7 @@ A responsive, full-featured photo editing application with both quick-action too
 - **Tool Settings** - Slider controls for precise parameter adjustments
 - **Chat Panel** - AI assistant for editing guidance and commands
 - **Export Dialog** - Multiple format support (PNG, JPEG, WebP)
-- **Settings Panel** - API key configuration and local model setup
+- **Settings Panel** - Local model setup and AI configuration
 
 ## Technology Stack
 
@@ -36,7 +36,7 @@ A responsive, full-featured photo editing application with both quick-action too
 - **Backend**: Express.js with Node.js
 - **Image Processing**: Canvas API (client-side)
 - **State Management**: React Hooks with localStorage
-- **APIs**: OpenAI Vision API (optional for AI features)
+- **AI Integration**: Google Gemini (via Replit AI Integrations)
 - **Local Models Support**: GFPGAN, Real-ESRGAN, REMBG, ONNX Runtime
 
 ## Getting Started
@@ -52,11 +52,11 @@ The application will start on `http://localhost:5000`
 
 ### Configuration
 
-1. **For AI Features**: Configure your OpenAI API key in Settings
-   - Get an API key at https://platform.openai.com/api-keys
-   - Settings are stored securely in localStorage
+1. **AI Features**: Automatically configured via Replit AI Integrations.
+   - No external API keys required.
+   - Powered by Gemini 1.5 Flash.
 
-2. **For Local Models**: Configure model paths in Settings
+2. **Local Models**: Configure model paths in Settings
    - Supported: GFPGAN, Real-ESRGAN, REMBG, ONNX models
    - Models run locally without internet connection
 
@@ -80,7 +80,7 @@ The application will start on `http://localhost:5000`
 │       │       └── ThemeToggle.tsx     # Dark mode toggle
 │       └── lib/
 │           ├── image-processing.ts    # Canvas-based processing
-│           └── openai-client.ts       # OpenAI API integration
+│           └── openai-client.ts       # AI API integration (Gemini)
 ├── server/
 │   ├── routes.ts                      # API endpoints
 │   ├── image-processor.ts             # Backend processing utilities
@@ -95,7 +95,7 @@ The application will start on `http://localhost:5000`
 
 - `GET /api/health` - Health check
 - `POST /api/process-image` - Client-side image processing
-- `POST /api/process-ai` - AI-powered image editing (requires API key)
+- `POST /api/process-ai` - AI-powered image editing (Gemini)
 - `POST /api/chat` - Chat interface for natural language commands
 - `GET /api/capabilities` - List available processing capabilities
 
@@ -140,7 +140,6 @@ Full history tracking allows reverting to any previous state.
 
 ## Limitations
 
-- Object removal and background changes require OpenAI API key
 - Local model processing requires TensorFlow.js or compatible ONNX runtime
 - Image processing is limited to client capabilities on older browsers
 - Undo history is session-based (not persisted)
@@ -186,3 +185,4 @@ Built with:
 - Lucide React for icons
 - TailwindCSS for styling
 - Canvas API for image processing
+- Google Gemini for AI capabilities
