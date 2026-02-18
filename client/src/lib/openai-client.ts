@@ -1,113 +1,61 @@
-// OpenAI API client for advanced image editing features
+// Gemini AI client for image editing and chat
 import { ChatMessage } from "@shared/schema";
 
-export interface OpenAIEditRequest {
+export interface AIEditRequest {
   imageBase64: string;
   prompt: string;
   operation: "removeObject" | "changeBackground" | "enhance";
 }
 
-export async function callOpenAIEdit(
-  request: OpenAIEditRequest,
-  apiKey: string
+export async function callAIEdit(
+  request: AIEditRequest
 ): Promise<string> {
-  if (!apiKey) {
-    throw new Error("OpenAI API key not configured");
-  }
-
   try {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    const response = await fetch("/api/process-ai", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "gpt-4-vision-preview",
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "image_url",
-                image_url: {
-                  url: `data:image/jpeg;base64,${request.imageBase64}`,
-                },
-              },
-              {
-                type: "text",
-                text: request.prompt,
-              },
-            ],
-          },
-        ],
-        max_tokens: 1024,
+        imageBase64: request.imageBase64,
+        prompt: request.prompt,
+        operation: request.operation,
+        modelType: "openai" // Backend will map this to Gemini now
       }),
     });
 
     if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.statusText}`);
+      throw new Error(`AI API error: ${response.statusText}`);
     }
 
     const data = await response.json();
-    return data.choices[0].message.content;
+    return data.image;
   } catch (error) {
-    console.error("OpenAI API call failed:", error);
+    console.error("AI API call failed:", error);
     throw error;
   }
 }
 
 export async function chatWithAI(
   messages: ChatMessage[],
-  imageBase64: string | null,
-  apiKey: string
+  imageBase64: string | null
 ): Promise<string> {
-  if (!apiKey) {
-    throw new Error("OpenAI API key not configured");
-  }
-
   try {
-    const content = [
-      ...messages.slice(-5).map((msg) => ({
-        type: "text" as const,
-        text: `${msg.role === "user" ? "User" : "Assistant"}: ${msg.content}`,
-      })),
-      ...(imageBase64
-        ? [
-            {
-              type: "image_url" as const,
-              image_url: { url: `data:image/jpeg;base64,${imageBase64}` },
-            },
-          ]
-        : []),
-    ];
-
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    const response = await fetch("/api/chat", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "gpt-4-vision-preview",
-        messages: [
-          {
-            role: "user",
-            content,
-          },
-        ],
-        max_tokens: 1024,
+        message: messages[messages.length - 1].content,
+        imageContext: imageBase64
       }),
     });
 
     if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.statusText}`);
+      throw new Error(`AI chat failed: ${response.statusText}`);
     }
 
     const data = await response.json();
-    return data.choices[0].message.content;
+    return data.message;
   } catch (error) {
-    console.error("OpenAI chat failed:", error);
+    console.error("AI chat failed:", error);
     throw error;
   }
 }

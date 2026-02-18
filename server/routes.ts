@@ -33,18 +33,13 @@ export async function registerRoutes(
   app.post("/api/process-ai", async (req, res) => {
     try {
       const validated = aiProcessingRequestSchema.parse(req.body);
-      const apiKey = req.headers["x-api-key"] as string || process.env.OPENAI_API_KEY;
 
-      if (validated.modelType === "openai") {
-        if (!apiKey) {
-          return res.status(401).json({ error: "OpenAI API key required" });
-        }
-        
-        const { callOpenAIImageEdit } = await import("./image-processor");
-        const processedImage = await callOpenAIImageEdit({
+      if (validated.modelType === "openai" || validated.modelType === "default") {
+        const { callGeminiImageAnalysis } = await import("./image-processor");
+        const processedImage = await callGeminiImageAnalysis({
           imageBase64: validated.imageBase64,
           prompt: validated.operation,
-        }, apiKey);
+        });
 
         return res.json({ success: true, image: processedImage });
       } else {
@@ -66,42 +61,36 @@ export async function registerRoutes(
   // Chat endpoint for natural language image editing commands
   app.post("/api/chat", async (req, res) => {
     try {
-      const { message, imageContext, apiKey: userApiKey } = req.body;
-      const apiKey = userApiKey || process.env.OPENAI_API_KEY;
+      const { message, imageContext } = req.body;
 
       if (!message || typeof message !== "string") {
         return res.status(400).json({ error: "Message required" });
       }
 
-      if (!apiKey) {
-        return res.status(401).json({ error: "API key required for chat" });
-      }
+      const { GoogleGenerativeAI } = await import("@google/generative-ai");
+      const genAI = new GoogleGenerativeAI(process.env.REPLIT_AI_API_KEY || "");
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-      const { OpenAI } = await import("openai");
-      const openai = new OpenAI({ apiKey });
-
-      const content: any[] = [{ type: "text", text: message }];
+      const parts: any[] = [{ text: message }];
       if (imageContext) {
-        content.push({
-          type: "image_url",
-          image_url: { url: `data:image/jpeg;base64,${imageContext}` }
+        parts.push({
+          inlineData: {
+            data: imageContext,
+            mimeType: "image/jpeg"
+          }
         });
       }
 
-      const response = await openai.chat.completions.create({
-        model: "gpt-4-vision-preview",
-        messages: [{ role: "user", content }],
-        max_tokens: 500,
-      });
-
-      const reply = response.choices[0].message.content;
+      const result = await model.generateContent(parts);
+      const reply = result.response.text();
 
       res.json({
         success: true,
         message: reply,
-        suggestedOperation: null, // Intent extraction could be added here
+        suggestedOperation: null,
       });
     } catch (error: any) {
+      console.error("Gemini chat error:", error);
       res.status(500).json({ error: error.message || "Server error" });
     }
   });
